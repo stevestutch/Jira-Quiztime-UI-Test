@@ -1,9 +1,12 @@
 package com.jira;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Properties;
 
 import org.openqa.selenium.By;
@@ -12,6 +15,7 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 
+import io.cucumber.java.After;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
@@ -21,16 +25,16 @@ public class StepDefinitions {
 
     @Given("I open Jira login")
     public void openQuizTime() throws InterruptedException {
-
+        Thread.sleep(1500);
         System.setProperty("webdriver.chrome.driver",
                 "/Users/steven/Desktop/ChromeDriver/chromedriver-mac-x64/chromedriver");
 
         ChromeOptions options = new ChromeOptions();
         options.addArguments("--remote-allow-origins=*");
-
         driver = new ChromeDriver(options);
         driver.get(
                 "https://schwsteven.atlassian.net/jira/software/projects/QUIZ/apps/3b2b1263-ab8b-4398-a3ae-3e8c97b07c01/11dbd3f5-e5c4-4850-88c9-9369b2ccb01a");
+        driver.manage().window().maximize();
     }
 
     @When("I enter valid credentials")
@@ -52,19 +56,56 @@ public class StepDefinitions {
         String password = properties.getProperty("jira.password");
 
         userNameInputField.sendKeys(userName);
-        Thread.sleep(500);
         submitButton.click();
         Thread.sleep(500);
         passwordInputField.sendKeys(password);
-        Thread.sleep(500);
         submitButton.click();
+    }
+
+    @When("I click on 'Start new Game'")
+    public void clickOnStartNewGame() throws InterruptedException {
+        Thread.sleep(3000);
+
+        WebElement iFrame = driver.findElement(By.tagName("iframe"));
+        driver.switchTo().frame(iFrame);
+        WebElement startNewGameBtn = driver.findElement(By.id("startNewGameBtn"));
+        startNewGameBtn.click();
     }
 
     @Then("I get redirected to QuizTime URL")
     public void checkUrl() throws InterruptedException {
-        Thread.sleep(3000);
+        Thread.sleep(5000);
         String expectedUrl = "https://schwsteven.atlassian.net/jira/software/projects/QUIZ/apps/3b2b1263-ab8b-4398-a3ae-3e8c97b07c01/11dbd3f5-e5c4-4850-88c9-9369b2ccb01a";
         String actualUrl = driver.getCurrentUrl();
         assertEquals(expectedUrl, actualUrl);
+    }
+
+    @Then("I should see the game field with all elements")
+    public void checkGameField() throws InterruptedException {
+        boolean result = true;
+
+        try {
+            WebElement questionContainer = driver.findElement(By.className("question-container"));
+            WebElement scoreContainer = driver.findElement(By.className("score-container"));
+            WebElement btnContainer = driver.findElement(By.className("btn-container"));
+            List<WebElement> answerButtons = driver.findElements(By.className("btn"));
+
+            if (answerButtons.size() != 4) {
+                System.out.println("❌ Incorrect number of answer buttons.");
+                throw new NoSuchElementException();
+            }
+            System.out.println("✅ Existence test passed: Expected elements were found.");
+        } catch (Exception e) {
+            System.out.println("❌ Existence test failed: Element was not found when it was expected to be existent.");
+            result = false;
+        }
+        assertTrue(result);
+    }
+
+    @After
+    public void quitTest() {
+        if (driver != null) {
+            driver.close();
+        }
     }
 }
