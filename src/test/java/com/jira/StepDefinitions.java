@@ -14,6 +14,7 @@ import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.interactions.Actions;
 
 import io.cucumber.java.After;
 import io.cucumber.java.en.Given;
@@ -70,6 +71,41 @@ public class StepDefinitions {
         driver.switchTo().frame(iFrame);
         WebElement startNewGameBtn = driver.findElement(By.id("startNewGameBtn"));
         startNewGameBtn.click();
+    }
+
+    @When("I answer {} questions correctly")
+    public void answerCorrectly(int numOfQuestions) throws InterruptedException {
+        Thread.sleep(1000);
+        for (int i = 0; i < numOfQuestions; i++) {
+            WebElement questionContainer = driver.findElement(By.className("question-container"));
+            String currentQuestion = questionContainer.getText();
+            String answer = Questions.Question.getAnswerForQuestion(currentQuestion);
+
+            System.out.println("DISPLAYED QUESTION: " + currentQuestion);
+            System.out.println("CORRECT ANSWER: " + answer);
+
+            List<WebElement> answerButtons = driver.findElements(By.className("btn"));
+
+            for (WebElement button : answerButtons) {
+                if (button.getText().equals(answer)) {
+                    Actions actions = new Actions(driver);
+                    actions.moveToElement(button).perform();
+                    Thread.sleep(300);
+                    button.click();
+                    break;
+                }
+            }
+        }
+    }
+
+    @Then("The current score should be {}")
+    public void checkScore(int expectedScore) throws InterruptedException {
+        Thread.sleep(1000);
+        WebElement currentScoreContainer = driver.findElement(By.className("score-container"));
+        String actualScoreString = currentScoreContainer.getText();
+        int actualScore = Integer.parseInt(actualScoreString.replaceAll("[^0-9]", ""));
+
+        assertEquals(expectedScore, actualScore);
     }
 
     @Then("I get redirected to QuizTime URL")
